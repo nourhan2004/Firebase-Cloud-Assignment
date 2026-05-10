@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Cloud Backend Assignment</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input { padding: 10px; width: 80%; margin-bottom: 10px; }
+        button { padding: 10px 20px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
+        .book-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>إدارة الكتب (Cloud Backend)</h2>
+    
+    <!-- حقول الإضافة (Create) -->
+    <div>
+        <input type="text" id="bookTitle" placeholder="عنوان الكتاب">
+        <input type="text" id="bookAuthor" placeholder="المؤلف">
+        <button onclick="addBook()">إضافة كتاب</button>
+    </div>
+
+    <hr>
+
+    <!-- قائمة العرض (Read) -->
+    <h3>قائمة الكتب الحالية:</h3>
+    <div id="booksList"></div>
+</div>
+
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+ apiKey: "AIzaSyC276rdHNDz4ymlYtgYVbbSSIXe7q1DjXA",
+  authDomain: "cloudbackendassignment.firebaseapp.com",
+  databaseURL: "https://cloudbackendassignment-default-rtdb.firebaseio.com",
+  projectId: "cloudbackendassignment",
+  storageBucket: "cloudbackendassignment.firebasestorage.app",
+  messagingSenderId: "194418477160",
+  appId: "1:194418477160:web:471a7ae33807dd089793dd",
+  measurementId: "G-FNKP8WHM4C"
+};
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+// وظيفة الإضافة
+window.addBook = async () => {
+    const title = document.getElementById('bookTitle').value;
+    const author = document.getElementById('bookAuthor').value;
+
+    if (title === "" || author === "") {
+        alert("يرجى ملء جميع الخانات");
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, "books"), {
+            title: title,
+            author: author
+        });
+        alert("تمت إضافة الكتاب إلى السحابة بنجاح!");
+        document.getElementById('bookTitle').value = "";
+        document.getElementById('bookAuthor').value = "";
+        loadBooks(); // تحديث القائمة بعد الإضافة
+    } catch (e) {
+        console.error("خطأ في الإضافة: ", e);
+    }
+};
+// وظيفة جلب البيانات وعرضها
+async function loadBooks() {
+    const booksList = document.getElementById('booksList');
+    booksList.innerHTML = "جاري التحميل..."; // رسالة مؤقتة
+    
+    const querySnapshot = await getDocs(collection(db, "books"));
+    booksList.innerHTML = ""; // مسح القائمة الحالية
+
+    querySnapshot.forEach((docData) => {
+        const book = docData.data();
+        const id = docData.id;
+
+        booksList.innerHTML += `
+            <div style="border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 5px;">
+                <p><strong>العنوان:</strong> ${book.title}</p>
+                <p><strong>المؤلف:</strong> ${book.author}</p>
+                <button onclick="updateBook('${id}')" style="background-color: #28a745;">تعديل العنوان</button>
+            </div>
+        `;
+    });
+}
+
+// وظيفة التحديث
+window.updateBook = async (id) => {
+    const newTitle = prompt("أدخل عنوان الكتاب الجديد:");
+    if (newTitle) {
+        const bookRef = doc(db, "books", id);
+        await updateDoc(bookRef, { title: newTitle });
+        alert("تم تحديث البيانات!");
+        loadBooks(); // تحديث القائمة
+    }
+};
+
+// تشغيل جلب البيانات فور فتح الصفحة
+loadBooks();
+
+</script>
+
+</body>
+</html>
